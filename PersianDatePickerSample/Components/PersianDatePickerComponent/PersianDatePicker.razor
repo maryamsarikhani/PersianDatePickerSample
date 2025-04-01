@@ -1,0 +1,51 @@
+﻿@using PersianDatePickerSample.Components.PersianDatePickerComponent
+
+
+<div class="persian-date-picker">
+    <div class="input-wrapper">
+        <input class="p-date" readonly value="@selectedDateInPersianFormat" />
+        <a @onclick="Clear" class="clear">&#10006;</a>
+    </div>
+</div>
+
+@code
+{
+    [Parameter]
+    public DateTime? Date { get; set; }
+
+    [Parameter]
+    public EventCallback<DateTime?> DateChanged { get; set; }
+
+    DateTime? selectedDate;
+    string selectedDateInPersianFormat;
+    System.Globalization.PersianCalendar pc = new();
+    List<DateCellModel> dateCells = new();
+    string fullMonthName;
+    int currentMonth;
+    int currentYear;
+    int currentDay;
+    bool monthMode, yearMode, openPicker;
+
+    protected override void OnInitialized()
+    {
+        if (Date.HasValue)
+            SetPersianFormatText(Date.Value);
+    }
+
+    void SetPersianFormatText(DateTime date)
+    {
+        currentYear = pc.GetYear(date);
+        currentMonth = pc.GetMonth(date);
+        currentDay = pc.GetDayOfMonth(date);
+        selectedDateInPersianFormat = $"{currentYear}/{currentMonth.ToString("D2")}/{currentDay.ToString("D2")}";
+    }
+
+    void Clear()
+    {
+        Date=selectedDate=null;
+        selectedDateInPersianFormat = string.Empty;
+        openPicker = false;
+        DateChanged.InvokeAsync(null);
+
+    }
+}
