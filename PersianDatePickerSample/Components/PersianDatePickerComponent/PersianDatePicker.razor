@@ -1,49 +1,48 @@
 ﻿@using PersianDatePickerSample.Components.PersianDatePickerComponent
 
 
-<div class="persian-date-picker">
+<div class="Persian-date-picker">
     <div class="input-wrapper">
-        <input class="p-date" 
-               readonly 
+        <input class="p-date" readonly
                value="@selectedDateInPersianFormat"
-               @onclick="OpenPicker"/>
+               @onclick="OpenPicker" />
         <a @onclick="Clear" class="clear">&#10006;</a>
     </div>
-    @if(openPicker)
+    @if (openPicker)
     {
-        <div class="persian-date-wrapper">
+        <div class="Persian-date-wrapper">
             @if (monthMode)
             {
                 <div class="month-select">
-                    @foreach(var item in PersianDateHelper.GetMonths())
+                    @foreach (var item in PersianDateHelper.GetMonths())
                     {
-                        <a @onclick="()=>GoToMonth(item.MonthNumber)">@item.MonthName</a>
+                        <a @onclick="() => GoToMonth(item.MonthNumber)">@item.MonthName</a>
                     }
                 </div>
             }
-            else if(yearMode)
+            else if (yearMode)
             {
-               <div class="year-select">
-                   @for(int i=1350; i<=1450;i++)
+                <div class="year-select">
+                    @for (int i = curYear; i >= 1370; i--)
                     {
                         var year = i;
-                        <a @onclick="()=>GoToYear(year)">@i</a>
+                        <a @onclick="() => GoToYear(year)">@i</a>
                     }
 
-               </div> 
+                </div>
             }
             else
             {
                 <div class="year">
-                  <span @onclick="YearMode">@currentYear</span>
+                    <span @onclick="YearMode">@currentYear</span>
                 </div>
                 <div class="month">
-                    <a @onclick="PrevMonth" class="navigation">&#8249;</a>
+                    <a @onclick="NextMonth" class="navigation">&#8249;</a>
                     <span @onclick="MonthMode">@fullMonthName</span>
-                    <a @onclick="NextMonth" class="navigation">&#8250;</a>
+                    <a @onclick="PrevMonth" class="navigation">&#8250;</a>
                 </div>
                 <div class="week">
-                    @foreach(var name in PersianDateHelper.WeekNames)
+                    @foreach (var name in PersianDateHelper.WeekNames)
                     {
                         <div class="day-name">
                             <span>@name</span>
@@ -52,17 +51,20 @@
                     @foreach (var item in cells)
                     {
                         var dayClass = item.Show ? "day" : "";
-                        if (item.Show && selectedDate.Value.Date == item.Date.Date)
+
+                        if (selectedDate.HasValue && item.Show && selectedDate.Value.Date == item.Date.Date)
                             dayClass = $"{dayClass} current";
-                            <div class="@dayClass">
-                                @if(item.Show)
+
+                        <div class="@dayClass">
+                          @if (item.Show)
                             {
                                 <a @onclick="() => SelectDate(item.Date)">@item.Day</a>
                             }
                         </div>
+
                     }
                 </div>
-                
+
             }
         </div>
     }
@@ -77,17 +79,20 @@
     public EventCallback<DateTime?> DateChanged { get; set; }
 
     DateTime? selectedDate;
-    string selectedDateInPersianFormat;
+    string selectedDateInPersianFormat = string.Empty;
     System.Globalization.PersianCalendar pc = new();
     List<DateCellModel> cells = new();
-    string fullMonthName;
+    string fullMonthName = string.Empty;
     int currentMonth;
     int currentYear;
     int currentDay;
     bool monthMode, yearMode, openPicker;
 
+    int curYear;//سال جاری
+
     protected override void OnInitialized()
     {
+        curYear = pc.GetYear(DateTime.Now);
         if (Date.HasValue)
             SetPersianFormatText(Date.Value);
     }
@@ -102,7 +107,7 @@
 
     void Clear()
     {
-        Date=selectedDate=null;
+        Date = selectedDate = null;
         selectedDateInPersianFormat = string.Empty;
         openPicker = false;
         DateChanged.InvokeAsync(null);
@@ -111,7 +116,7 @@
 
     void OpenPicker()
     {
-        if(openPicker)
+        if (openPicker)
         {
             openPicker = false;
             return;
@@ -137,12 +142,12 @@
         int weekSpan = firstDayOfDate.DayOfWeek.GetWeekSpan();
 
         var maxDay = currentMonth <= 6 ? 31 : 30;
-        if(!isLeapYear && currentMonth==12 && maxDay==30)
+        if (!isLeapYear && currentMonth == 12 && maxDay == 30)
         {
             maxDay = 29;
         }
 
-        for(int i=1;i<=weekSpan;i++)
+        for (int i = 1; i <= weekSpan; i++)
         {
             cells.Add(new DateCellModel
             {
@@ -150,7 +155,7 @@
             });
         }
 
-        for(int i=1;i<=maxDay;i++)
+        for (int i = 1; i <= maxDay; i++)
         {
             cells.Add(new DateCellModel
             {
@@ -161,14 +166,14 @@
 
         var remain = 42 - cells.Count();
 
-        if(remain>0)
+        if (remain > 0)
         {
-            for (int i=1;i<=remain;i++)
+            for (int i = 1; i <= remain; i++)
             {
                 cells.Add(new DateCellModel
-                    {
-                        Day = 0
-                    });
+                {
+                    Day = 0
+                });
             }
         }
     }
@@ -183,11 +188,11 @@
 
     void PrevMonth()
     {
-        if (currentMonth>1)
+        if (currentMonth > 1)
         {
             currentMonth--;
         }
-        else if(currentMonth==1)
+        else if (currentMonth == 1)
         {
             currentMonth = 12;
             currentYear--;
@@ -202,26 +207,54 @@
 
     }
 
+    // void NextMonth()
+    // {
+    //     if (currentMonth < 12)
+    //     {
+    //         currentMonth++;
+    //     }
+    //     else if (currentMonth == 12)
+    //     {
+    //         currentMonth = 1;
+    //         currentYear++;
+    //     }
+
+    //     selectedDate = new DateTime(currentYear, currentMonth, currentDay, pc);
+
+    //     if (currentMonth == 12 && !pc.IsLeapYear(currentYear) && currentDay > 29)
+    //         currentDay = 1;
+
+    //     PrepareCells(selectedDate.Value);
+
+    // }
+
     void NextMonth()
     {
         if (currentMonth < 12)
         {
             currentMonth++;
         }
-        else if(currentMonth==12)
+        else if (currentMonth == 12)
         {
-            currentMonth = 1;
-            currentYear++;
+            if (currentYear < curYear) 
+            {
+                currentMonth = 1;
+                currentYear++;
+            }
+            else
+            {
+                return; 
+            }
         }
 
         selectedDate = new DateTime(currentYear, currentMonth, currentDay, pc);
 
-        if (currentMonth == 12 && !pc.IsLeapYear(currentYear) && currentDay > 29)
+        if (currentYear == curYear && currentMonth == 12 && !pc.IsLeapYear(currentYear) && currentDay > 29)
             currentDay = 1;
 
         PrepareCells(selectedDate.Value);
-
     }
+
 
     void GoToMonth(int month)
     {
