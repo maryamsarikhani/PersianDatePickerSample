@@ -1,14 +1,13 @@
 ﻿@using PersianDatePickerSample.Components.PersianDatePickerComponent
+@inject IJSRuntime JS
 
-
-<div class="Persian-date-picker">
+<div class="Persian-date-picker" id="PersianPicker">
     <div class="input-wrapper">
         <input class="p-date"
+               id="manualDateInput"
                value="@manualInput"
-               @onkeydown="HandleKeyDown"
                @onfocus="() => manualInput = selectedDateInPersianFormat"
                @onclick="OpenPicker" />
-
         <a @onclick="Clear" class="clear">&#10006;</a>
     </div>
 
@@ -66,7 +65,11 @@
                         var dayClass = item.Show ? "day" : "";
 
                         if (selectedDate.HasValue && item.Show && selectedDate.Value.Date == item.Date.Date)
-                            dayClass = $"{dayClass} current";
+                            dayClass += " current";
+
+                        var today = new DateTime(pc.GetYear(DateTime.Now), pc.GetMonth(DateTime.Now), pc.GetDayOfMonth(DateTime.Now), pc);
+                        if (item.Show && item.Date.Date == today.Date)
+                            dayClass += " today";
 
                         <div class="@dayClass">
                             @if (item.Show)
@@ -81,31 +84,22 @@
     }
 </div>
 
-
-@code
-{
-
-
-
-    [Parameter]
-    public DateTime? Date { get; set; }
-
-    [Parameter]
-    public EventCallback<DateTime?> DateChanged { get; set; }
+@code {
+    [Parameter] public DateTime? Value { get => Date; set { if (Date != value) { Date = value; DateChanged.InvokeAsync(value); } } }
+    [Parameter] public EventCallback<DateTime?> ValueChanged { get; set; }
+    [Parameter] public DateTime? Date { get; set; }
+    [Parameter] public EventCallback<DateTime?> DateChanged { get; set; }
 
     DateTime? selectedDate;
     string selectedDateInPersianFormat = string.Empty;
     System.Globalization.PersianCalendar pc = new();
     string manualInput = string.Empty;
-    string validationMessage = string.Empty; // پیام اعتبارسنجی
+    string validationMessage = string.Empty;
     List<DateCellModel> cells = new();
     string monthName = string.Empty;
-    int currentMonth;
-    int currentYear;
-    int currentDay;
+    int currentMonth, currentYear, currentDay, curYear;
     bool monthMode, yearMode, openPicker;
-
-    int curYear;//سال جاری
+    DotNetObjectReference<PersianDatePicker>? objRef;
 
     protected override void OnInitialized()
     {
@@ -113,6 +107,106 @@
         if (Date.HasValue)
             SetPersianFormatText(Date.Value);
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            objRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("addOutsideClickListener", "PersianPicker", objRef);
+            await JS.InvokeVoidAsync("clearInputAndApplyMask", "manualDateInput", objRef);
+        }
+    }
+
+    [JSInvokable]
+    public void UpdateCalendar(int year, int month, int day)
+    {
+        try
+        {
+            // اعتبارسنجی سال
+            if (year < 1380 || year > 1420)
+            {
+                validationMessage = "سال باید بین 1380 تا 1420 باشد.";
+                return;
+            }
+
+            // اعتبارسنجی ماه
+            if (month < 1 || month > 12)
+            {
+                validationMessage = "ماه باید بین 1 تا 12 باشد.";
+                return;
+            }
+
+            // بررسی تعداد روزهای معتبر در ماه
+            int maxDays = GetDaysInMonth(year, month);
+            if (day < 1 || day > maxDays)
+            {
+                validationMessage = $"روز باید بین 1 تا {maxDays} باشد.";
+                return;
+            }
+
+            // تنظیم تاریخ معتبر
+            selectedDate = new DateTime(year, month, day, pc);
+
+            // بروزرسانی تقویم
+            Date = selectedDate;
+            DateChanged.InvokeAsync(selectedDate);
+            PrepareCells(selectedDate.Value);
+            SetPersianFormatText(selectedDate.Value);
+
+            // بازنشانی پیام خطا و بستن پیکر
+            validationMessage = string.Empty;
+            openPicker = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            validationMessage = $"خطا در تنظیم تاریخ: {ex.Message}";
+        }
+    }
+
+
+
+    protected override void OnParametersSet()
+    {
+        if (Date != selectedDate)
+        {
+            selectedDate = Date;
+            if (selectedDate.HasValue)
+            {
+                SetPersianFormatText(selectedDate.Value);
+                PrepareCells(selectedDate.Value);
+            }
+        }
+    }
+
+    [JSInvokable]
+    public void ClosePicker()
+    {
+        openPicker = false;
+        StateHasChanged();
+    }
+
+    void Clear()
+    {
+        Date = selectedDate = null;
+        selectedDateInPersianFormat = string.Empty;
+        validationMessage = string.Empty;
+        openPicker = false;
+        DateChanged.InvokeAsync(null);
+
+        // Invoke JS function to reset input field
+        JS.InvokeVoidAsync("clearInputAndApplyMask", "manualDateInput");
+    }
+
+    public void Dispose()
+    {
+        if (objRef != null)
+        {
+            objRef.Dispose();
+        }
+    }
+
 
     // مدیریت ورودی دستی
     void HandleManualInput(ChangeEventArgs e)
@@ -182,124 +276,6 @@
         }
     }
 
-    void HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key.Length == 1 && char.IsDigit(e.Key[0]))
-        {
-            string digitsOnly = new(manualInput.Where(char.IsDigit).ToArray());
-
-            if (digitsOnly.Length == 0 && e.Key != "1")
-                return;
-
-            // محدودیت طول ورودی
-            if (digitsOnly.Length >= 8)
-                return;
-
-            // جلوگیری از ورود بیش از یک بار 1 در اول
-            if (digitsOnly.Length == 0 && e.Key == "1")
-            {
-                digitsOnly += "1";
-            }
-            else if (digitsOnly.Length > 0)
-            {
-                digitsOnly += e.Key;
-            }
-
-            manualInput = FormatDateInput(digitsOnly);
-
-            if (digitsOnly.Length == 8)
-            {
-                TryParseManualInput(digitsOnly);
-            }
-        }
-        else if (e.Key == "Backspace")
-        {
-            string digitsOnly = new(manualInput.Where(char.IsDigit).ToArray());
-            if (digitsOnly.Length > 0)
-                digitsOnly = digitsOnly[..^1];
-
-            manualInput = FormatDateInput(digitsOnly);
-        }
-
-        validationMessage = string.Empty;
-    }
-
-    string FormatDateInput(string digits)
-    {
-        var builder = new System.Text.StringBuilder("____/__/__");
-        int index = 0;
-
-        for (int i = 0; i < builder.Length && index < digits.Length; i++)
-        {
-            if (builder[i] == '_')
-            {
-                builder[i] = digits[index];
-                index++;
-            }
-        }
-
-        return builder.ToString();
-    }
-
-    void TryParseManualInput(string digitsOnly)
-    {
-        if (digitsOnly.Length != 8)
-            return;
-
-        if (!int.TryParse(digitsOnly[..4], out int year) ||
-            !int.TryParse(digitsOnly.Substring(4, 2), out int month) ||
-            !int.TryParse(digitsOnly.Substring(6, 2), out int day))
-        {
-            validationMessage = "فرمت تاریخ نامعتبر است.";
-            return;
-        }
-
-        if (month < 1 || month > 12)
-        {
-            validationMessage = "ماه نامعتبر است.";
-            return;
-        }
-
-        int maxDays = GetDaysInMonth(year, month);
-        if (day < 1 || day > maxDays)
-        {
-            validationMessage = $"روز نامعتبر است. باید بین 1 تا {maxDays} باشد.";
-            return;
-        }
-
-        try
-        {
-            selectedDate = new DateTime(year, month, day, pc);
-            Date = selectedDate;
-            DateChanged.InvokeAsync(selectedDate);
-            SetPersianFormatText(selectedDate.Value);
-            PrepareCells(selectedDate.Value);
-            openPicker = false;
-        }
-        catch (Exception ex)
-        {
-            validationMessage = $"خطا در ساخت تاریخ: {ex.Message}";
-        }
-    }
-
-
-    void SetPersianFormatText(DateTime date)
-    {
-        currentYear = pc.GetYear(date);
-        currentMonth = pc.GetMonth(date);
-        currentDay = pc.GetDayOfMonth(date);
-        selectedDateInPersianFormat = $"{currentYear}/{currentMonth.ToString("D2")}/{currentDay.ToString("D2")}";
-    }
-
-    void Clear()
-    {
-        Date = selectedDate = null;
-        selectedDateInPersianFormat = string.Empty;
-        validationMessage = string.Empty;
-        openPicker = false;
-        DateChanged.InvokeAsync(null);
-
-    }
 
     void OpenPicker()
     {
@@ -309,59 +285,49 @@
             return;
         }
 
-        selectedDate = Date.HasValue ? Date : DateTime.Now;
+        selectedDate = Date ?? DateTime.Now;
         PrepareCells(selectedDate.Value);
         openPicker = true;
     }
 
-    void PrepareCells(DateTime date)
+    void SetPersianFormatText(DateTime date)
     {
-        cells = new();
         currentYear = pc.GetYear(date);
         currentMonth = pc.GetMonth(date);
         currentDay = pc.GetDayOfMonth(date);
-        var isLeapYear = pc.IsLeapYear(currentYear);
+        selectedDateInPersianFormat = $"{currentYear}/{currentMonth:D2}/{currentDay:D2}";
+    }
 
-        monthName = $"{currentMonth.GetMonthName()}";
-        selectedDateInPersianFormat = $"{currentYear}/{currentMonth.ToString("D2")}/{currentDay.ToString("D2")}";
+    void PrepareCells(DateTime date)
+    {
+        cells.Clear();
+        currentYear = pc.GetYear(date);
+        currentMonth = pc.GetMonth(date);
+        currentDay = pc.GetDayOfMonth(date);
+        monthName = currentMonth.GetMonthName();
 
-        var firstDayOfDate = new DateTime(currentYear, currentMonth, 1, pc);
-        int weekSpan = firstDayOfDate.DayOfWeek.GetWeekSpan();
+        var firstDayOfMonth = new DateTime(currentYear, currentMonth, 1, pc);
+        int offset = firstDayOfMonth.DayOfWeek.GetWeekSpan();
+        int daysInMonth = GetDaysInMonth(currentYear, currentMonth);
 
-        var maxDay = currentMonth <= 6 ? 31 : 30;
-        if (!isLeapYear && currentMonth == 12 && maxDay == 30)
+        for (int i = 0; i < offset; i++)
         {
-            maxDay = 29;
+            cells.Add(new DateCellModel { Day = 0 });
         }
 
-        for (int i = 1; i <= weekSpan; i++)
+        for (int i = 1; i <= daysInMonth; i++)
         {
             cells.Add(new DateCellModel
-                {
-                    Day = 0
-                });
-        }
-
-        for (int i = 1; i <= maxDay; i++)
-        {
-            cells.Add(new DateCellModel
-                {
-                    Day = i,
-                    Date = firstDayOfDate.AddDays(i - 1)
-                });
-        }
-
-        var remain = 42 - cells.Count();
-
-        if (remain > 0)
-        {
-            for (int i = 1; i <= remain; i++)
             {
-                cells.Add(new DateCellModel
-                    {
-                        Day = 0
-                    });
-            }
+                Day = i,
+                Date = firstDayOfMonth.AddDays(i - 1),
+                //Show = true
+            });
+        }
+
+        while (cells.Count < 42)
+        {
+            cells.Add(new DateCellModel { Day = 0 });
         }
     }
 
@@ -369,162 +335,55 @@
     {
         selectedDate = Date = date;
         openPicker = false;
-        DateChanged.InvokeAsync(selectedDate);
-        SetPersianFormatText(Date.Value);
+        ValueChanged.InvokeAsync(selectedDate);
+        SetPersianFormatText(date);
     }
 
-    // متد کمکی برای دریافت تعداد روزهای ماه
-    int GetDaysInMonth(int year, int month)
-    {
-        return pc.GetDaysInMonth(year, month);
-    }
-
-    #region [ Month ]
+    int GetDaysInMonth(int year, int month) => pc.GetDaysInMonth(year, month);
 
     void NextMonth()
     {
-
-        if (currentMonth < 12)
-        {
-            currentMonth++;
-        }
-        else
-        {
-            currentMonth = 1;
-            currentYear++;
-        }
-
-        int lastDayOfMonth = GetDaysInMonth(currentYear, currentMonth);
-        currentDay = currentDay > lastDayOfMonth ? lastDayOfMonth : currentDay;
-
-        try
-        {
-            selectedDate = new DateTime(currentYear, currentMonth, currentDay, pc);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"خطا در تنظیم تاریخ: {ex.Message}");
-            selectedDate = new DateTime(currentYear, currentMonth, 1, pc);
-        }
-
-        PrepareCells(selectedDate.Value);
+        if (currentMonth < 12) currentMonth++; else { currentMonth = 1; currentYear++; }
+        AdjustDay();
     }
 
     void PrevMonth()
     {
-        if (currentMonth > 1)
-        {
-            currentMonth--;
-        }
-        else
-        {
-            currentMonth = 12;
-            currentYear--;
-        }
+        if (currentMonth > 1) currentMonth--; else { currentMonth = 12; currentYear--; }
+        AdjustDay();
+    }
 
-        int lastDayOfMonth = GetDaysInMonth(currentYear, currentMonth);
-        currentDay = currentDay > lastDayOfMonth ? lastDayOfMonth : currentDay;
-
-        try
-        {
-            selectedDate = new DateTime(currentYear, currentMonth, currentDay, pc);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"خطا در تنظیم تاریخ: {ex.Message}");
-            selectedDate = new DateTime(currentYear, currentMonth, 1, pc);
-        }
-
+    void AdjustDay()
+    {
+        int lastDay = GetDaysInMonth(currentYear, currentMonth);
+        currentDay = currentDay > lastDay ? lastDay : currentDay;
+        selectedDate = new DateTime(currentYear, currentMonth, currentDay, pc);
         PrepareCells(selectedDate.Value);
     }
+
+    void MonthMode() => (monthMode, yearMode) = (true, false);
+
+    void YearMode() => (yearMode, monthMode) = (true, false);
+
+    void NextYear() { currentYear++; AdjustDay(); }
+
+    void PrevYear() { currentYear--; AdjustDay(); }
 
     void GoToMonth(int month)
     {
         currentMonth = month;
+        if (currentMonth == 12 && !pc.IsLeapYear(currentYear) && currentDay > 29) currentDay = 1;
         selectedDate = new DateTime(currentYear, currentMonth, currentDay, pc);
-        if (currentMonth == 12 && !pc.IsLeapYear(currentYear) && currentDay > 29)
-            currentDay = 1;
-
         monthMode = yearMode = false;
-        PrepareCells(selectedDate.Value);
-    }
-
-    void MonthMode()
-    {
-        monthMode = true;
-        yearMode = false;
-    }
-
-    #endregion [ Month ]
-
-    #region [ Year ]
-
-    void NextYear()
-    {
-        currentYear++;
-
-        int lastDayOfMonth = GetDaysInMonth(currentYear, currentMonth);
-        currentDay = currentDay > lastDayOfMonth ? lastDayOfMonth : currentDay;
-
-        try
-        {
-            selectedDate = new DateTime(currentYear, currentMonth, currentDay, pc);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"خطا در تنظیم تاریخ: {ex.Message}");
-            selectedDate = new DateTime(currentYear, currentMonth, 1, pc);
-        }
-
-        PrepareCells(selectedDate.Value);
-    }
-
-    void PrevYear()
-    {
-
-        if (currentMonth == 1)
-        {
-            currentMonth = 12;
-            currentYear--;
-        }
-        else
-        {
-            currentMonth--;
-        }
-
-        int lastDayOfMonth = GetDaysInMonth(currentYear, currentMonth);
-        currentDay = currentDay > lastDayOfMonth ? lastDayOfMonth : currentDay;
-
-        try
-        {
-            selectedDate = new DateTime(currentYear, currentMonth, currentDay, pc);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"خطا در تنظیم تاریخ: {ex.Message}");
-            selectedDate = new DateTime(currentYear, currentMonth, 1, pc);
-        }
-
         PrepareCells(selectedDate.Value);
     }
 
     void GoToYear(int year)
     {
         currentYear = year;
+        if (currentMonth == 12 && !pc.IsLeapYear(currentYear) && currentDay > 29) currentDay = 1;
         selectedDate = new DateTime(currentYear, currentMonth, currentDay, pc);
-        if (currentMonth == 12 && !pc.IsLeapYear(currentYear) && currentDay > 29)
-            currentDay = 1;
-
         monthMode = yearMode = false;
         PrepareCells(selectedDate.Value);
     }
-
-    void YearMode()
-    {
-        yearMode = true;
-        monthMode = false;
-    }
-
-    #endregion [ Year ]
-
 }
