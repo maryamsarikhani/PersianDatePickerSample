@@ -1,0 +1,11 @@
+<PropertyGroup>
+	<TargetFramework>net8.0</TargetFramework>
+	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+
+	<PackageId>PersianDatePicker</PackageId>
+	<Version>1.0.0</Version>
+	<Authors>Maryam Sarikhani</Authors>
+	<Company>Tehran</Company>
+	<PackageDescription>Persian Date Picker for Blazor</PackageDescription>
+	<PackageTags>Blazor PersianDatePicker Calendar</PackageTags>
+</PropertyGroup>

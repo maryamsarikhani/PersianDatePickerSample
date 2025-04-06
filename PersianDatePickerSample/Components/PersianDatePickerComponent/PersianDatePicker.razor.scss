@@ -38,19 +38,17 @@
             justify-content: center;
             align-items: center;
             text-decoration: none;
-            font-size: 14px;
+            font-size: 15px;
             top: 5px;
             color: #bbb8b8;
             font-weight: 100;
 
             &:hover {
-                border: 1px solid #dcdcdc;
-                background: #f0f0f0;
                 cursor: pointer;
             }
         }
 
-        .validation {
+        .validation-message {
             color: #ff0000;
             font-size: 12px;
             text-align: right;
@@ -123,9 +121,10 @@
         .year {
             display: flex;
             font-size: 16px;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
-            height: 25px;
+            height: 32px;
+            margin-bottom: 6px;
 
             span {
                 font-weight: bold;
@@ -230,15 +229,17 @@
             font-weight: bold;
             color: #007bff;
             background-color: #f0f8ff;
-            border: 1px solid #007bff;
+            text-decoration: none;
             border-radius: 6px;
             padding: 5px 10px;
             cursor: pointer;
             transition: background-color 0.3s, color 0.3s;
 
             &:hover {
-                background-color: #0056b3;
-                color: #fff;
+                background: #dcdcdc;
+                cursor: pointer;
+                border-radius: 4px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
             }
         }
     }
