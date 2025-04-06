@@ -33,9 +33,12 @@ window.clearInputAndApplyMask = function (inputId, dotNetHelper) {
             const month = parseInt(digits.slice(4, 6), 10);
             const day = parseInt(digits.slice(6, 8), 10);
 
-            // ارسال اطلاعات به Blazor برای بررسی‌های دقیق‌تر و به‌روزرسانی تقویم
-            input.setCustomValidity(""); // Clear errors
-            dotNetHelper.invokeMethodAsync("UpdateCalendar", year, month, day);
+            // Validate ranges without error messages
+            if (year >= 1380 && year <= 1410 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                dotNetHelper.invokeMethodAsync("UpdateCalendar", year, month, day); // Send valid data
+            } else {
+                input.value = "____/__/__"; // Reset invalid input
+            }
         }
     });
 
@@ -46,49 +49,23 @@ window.clearInputAndApplyMask = function (inputId, dotNetHelper) {
         if (!isNumber && !allowedKeys.includes(e.key)) e.preventDefault();
     });
 
-    // Add event listener for blur to validate format
+    // Add event listener for blur to validate format and range
     input.addEventListener("blur", () => {
         const val = input.value;
         const regex = /^\d{4}\/\d{2}\/\d{2}$/;
-        if (!regex.test(val)) {
-            input.setCustomValidity("فرمت تاریخ باید به صورت yyyy/MM/dd باشد.");
-        } else {
-            input.setCustomValidity(""); // Clear errors if format is correct
+
+        if (regex.test(val)) {
+            const parts = val.split("/");
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10);
+            const day = parseInt(parts[2], 10);
+
+            // Validate ranges
+            if (year >= 1380 && year <= 1410 && month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+                dotNetHelper.invokeMethodAsync("UpdateCalendar", year, month, day); // Send valid data
+            } else {
+                input.value = "____/__/__"; // Reset invalid input
+            }
         }
     });
 };
-
-
-
-
-//window.applyPersianDateMask = function (inputId) {
-//    const input = document.getElementById(inputId);
-//    if (!input) return;
-
-//    input.addEventListener("input", () => {
-//        let digits = input.value.replace(/\D/g, "").slice(0, 8);
-//        let formatted = "";
-
-//        if (digits.length > 0) formatted += digits.slice(0, 4);
-//        if (digits.length > 4) formatted += "/" + digits.slice(4, 6);
-//        if (digits.length > 6) formatted += "/" + digits.slice(6, 8);
-
-//        input.value = formatted;
-//    });
-
-//    input.addEventListener("keydown", (e) => {
-//        const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"];
-//        const isNumber = /^[0-9]$/.test(e.key);
-//        if (!isNumber && !allowedKeys.includes(e.key)) e.preventDefault();
-//    });
-
-//    input.addEventListener("blur", () => {
-//        const val = input.value;
-//        const regex = /^\d{4}\/\d{2}\/\d{2}$/;
-//        if (!regex.test(val)) {
-//            input.setCustomValidity("فرمت تاریخ باید به صورت yyyy/MM/dd باشد.");
-//        } else {
-//            input.setCustomValidity("");
-//        }
-//    });
-//};

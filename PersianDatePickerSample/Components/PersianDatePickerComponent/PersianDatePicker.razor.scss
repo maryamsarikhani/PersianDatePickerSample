@@ -49,6 +49,12 @@
                 cursor: pointer;
             }
         }
+
+        .validation {
+            color: #ff0000;
+            font-size: 12px;
+            text-align: right;
+        }
     }
 
     .Persian-date-wrapper {
@@ -235,11 +241,5 @@
                 color: #fff;
             }
         }
-    }
-
-    .validation {
-        color: #ff0000; 
-        font-size: 12px;
-        text-align: right;
     }
 }

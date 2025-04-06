@@ -7,7 +7,8 @@
                id="manualDateInput"
                value="@manualInput"
                @onfocus="() => manualInput = selectedDateInPersianFormat"
-               @onclick="OpenPicker" />
+               @onclick="OpenPicker"
+               autocomplete="off" />
         <a @onclick="Clear" class="clear">&#10006;</a>
     </div>
 
@@ -138,20 +139,6 @@
     {
         try
         {
-            // اعتبارسنجی سال
-            if (year < 1380 || year > 1420)
-            {
-                validationMessage = "سال باید بین 1380 تا 1420 باشد.";
-                return;
-            }
-
-            // اعتبارسنجی ماه
-            if (month < 1 || month > 12)
-            {
-                validationMessage = "ماه باید بین 1 تا 12 باشد.";
-                return;
-            }
-
             // بررسی تعداد روزهای معتبر در ماه
             int maxDays = GetDaysInMonth(year, month);
             if (day < 1 || day > maxDays)
@@ -249,18 +236,18 @@
         for (int i = 1; i <= weekSpan; i++)
         {
             cells.Add(new DateCellModel
-            {
-                Day = 0
-            });
+                {
+                    Day = 0
+                });
         }
 
         for (int i = 1; i <= maxDay; i++)
         {
             cells.Add(new DateCellModel
-            {
-                Day = i,
-                Date = firstDayOfDate.AddDays(i - 1)
-            });
+                {
+                    Day = i,
+                    Date = firstDayOfDate.AddDays(i - 1)
+                });
         }
 
         var remain = 42 - cells.Count();
@@ -270,9 +257,9 @@
             for (int i = 1; i <= remain; i++)
             {
                 cells.Add(new DateCellModel
-                {
-                    Day = 0
-                });
+                    {
+                        Day = 0
+                    });
             }
         }
     }
