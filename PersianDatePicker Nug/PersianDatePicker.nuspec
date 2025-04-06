@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>PersianDatePicker</id>
+    <version>1.0.0</version>
+    <authors>Sarikhani</authors>
+    <owners>Tehran</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Persian Date Picker for Blazor</description>
+    <packageLicenseExpression>MIT</packageLicenseExpression>
+    <repository url="https://github.com/maryamsarikhani/PersianDatePickerSample.git" />
+    <tags>Blazor;UI;Component</tags>
+    <dependencies>
+      <dependency id="Microsoft.AspNetCore.Components.Web" version="8.0.11" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="bin\Release\net8.0\PersianDatePicker.dll" target="lib\net8.0" />
+  </files>
+</package>
