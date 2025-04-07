@@ -1,12 +1,75 @@
 ﻿@page "/"
+@using System.ComponentModel.DataAnnotations
 
 <PageTitle>Home</PageTitle>
 
+<div style="display: flex; gap: 1rem; margin: 1rem 0;">
+    <PersianDatePicker @bind-Date="@DateFtom" />
+    <PersianDatePicker @bind-Date="@DateTo" />
+    <PersianDatePicker @bind-Date="@Date"  />
+</div>
 
-<PersianDatePicker @bind-Date="Date"/>
+
+
 
 @code{
+    DateTime? DateFtom = DateTime.Now;
+    DateTime? DateTo = DateTime.Now;
+
     DateTime? Date = DateTime.Now;
 }
 
+@* <div class="date-pickers-container">
+    <div class="date-picker-group">
+        <label>از تاریخ:</label>
+        <PersianDatePicker @bind-Date="@DateFrom" />
+    </div>
 
+ @*    <div class="date-picker-group">
+        <label dir="rtl">تا تاریخ:</label>
+        <PersianDatePicker @bind-Date="@DateTo" UniqueId="To" />
+    </div> 
+</div>
+
+<button type="submit" class="btn btn-primary">ثبت</button>
+
+
+@code {
+
+
+    [Required(ErrorMessage = "تاریخ شروع را انتخاب کنید")]
+    public DateTime? DateFrom { get; set; }
+
+    [Required(ErrorMessage = "تاریخ پایان را انتخاب کنید")]
+    public DateTime? DateTo { get; set; }
+}
+
+<style>
+.date-pickers-container {
+    display: flex;
+    gap: 2rem;
+    margin: 1.5rem 0;
+    align-items: flex-end;
+}
+
+.date-picker-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 150px;
+}
+
+.validation-message {
+    color: #dc3545;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+}
+
+/* حالت موبایل */
+@@media (max-width: 768px) {
+    .date-pickers-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}
+</style> *@

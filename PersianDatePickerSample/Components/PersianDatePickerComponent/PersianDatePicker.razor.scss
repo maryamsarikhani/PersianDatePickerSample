@@ -87,6 +87,7 @@
                 &:hover {
                     background: #f0f8ff;
                     border: 1px solid #87ceeb;
+                    cursor: pointer;
                 }
             }
         }
@@ -114,6 +115,7 @@
                 &:hover {
                     background: #f0f8ff;
                     border: 1px solid #87ceeb;
+                    cursor: pointer;
                 }
             }
         }
@@ -124,7 +126,7 @@
             justify-content: space-between;
             align-items: center;
             height: 32px;
-            margin-bottom: 6px;
+            margin-bottom: 2px;
 
             span {
                 font-weight: bold;

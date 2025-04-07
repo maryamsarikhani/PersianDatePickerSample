@@ -1,19 +1,17 @@
-﻿@using PersianDatePickerSample.Components.PersianDatePickerComponent
-@using System.Globalization
-@inject IJSRuntime JS
+﻿@inject IJSRuntime JS
 
-<div class="Persian-date-picker" id="PersianPicker">
+<div class="Persian-date-picker" id="@($"manualDateInput_{UniqueId}")">
     <div class="input-wrapper">
         <input class="p-date"
-               id="manualDateInput"
-               value="@manualInput"
-               @onfocus="() =>
+        id="@($"manualDateInput_{UniqueId}")"
+        value="@manualInput"
+        @onfocus="() =>
                               {
                    if (!string.IsNullOrWhiteSpace(selectedDateInPersianFormat))
                        manualInput = selectedDateInPersianFormat;
                }"
-               @onclick="OpenPicker"
-               autocomplete="off" />
+        @onclick="OpenPicker"
+        autocomplete="off" />
 
         <a @onclick="Clear" class="clear">&#10006;</a>
     </div>
@@ -110,6 +108,7 @@
 </div>
 
 @code {
+    [Parameter] public string UniqueId { get; set; } = "ICT";
     [Parameter] public DateTime? Value { get => Date; set { if (Date != value) { Date = value; DateChanged.InvokeAsync(value); } } }
     [Parameter] public EventCallback<DateTime?> ValueChanged { get; set; }
     [Parameter] public DateTime? Date { get; set; }
@@ -128,6 +127,7 @@
 
     protected override void OnInitialized()
     {
+        UniqueId = $"{UniqueId}_{Guid.NewGuid()}";
         curYear = pc.GetYear(DateTime.Now);
         if (Date.HasValue)
             SetPersianFormatText(Date.Value);
@@ -146,14 +146,14 @@
         }
     }
 
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             objRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("clearInputAndApplyMask", "manualDateInput", objRef);
-            await JS.InvokeVoidAsync("addEnterKeyListener", "manualDateInput", objRef);
+            await JS.InvokeVoidAsync("clearInputAndApplyMask", $"manualDateInput_{UniqueId}", objRef);
+            await JS.InvokeVoidAsync("addEnterKeyListener", $"manualDateInput_{UniqueId}", objRef);
+            await JS.InvokeVoidAsync("addOutsideClickListener", $"manualDateInput_{UniqueId}", objRef);
         }
     }
 
@@ -189,13 +189,30 @@
         }
     }
 
-
     [JSInvokable]
     public void ClosePicker()
     {
         openPicker = false;
         StateHasChanged();
     }
+
+    [JSInvokable]
+    public void InvokeClickOutside()
+    {
+
+        if (yearMode || monthMode)
+        {
+            return;
+        }
+        else
+        {
+            openPicker = false;
+            monthMode = false;
+            yearMode = false;
+            StateHasChanged();
+        }
+    }
+
 
     public void Dispose()
     {
@@ -215,7 +232,7 @@
         yearMode = false;
         DateChanged.InvokeAsync(null);
         ValueChanged.InvokeAsync(null);
-        JS.InvokeVoidAsync("clearInput", "manualDateInput");
+        JS.InvokeVoidAsync("clearInput", $"manualDateInput_{UniqueId}");
         StateHasChanged();
     }
 
@@ -271,10 +288,10 @@
         for (int day = 1; day <= maxDay; day++)
         {
             cells.Add(new DateCellModel
-            {
-                Day = day,
-                Date = firstDayOfDate.AddDays(day - 1)
-            });
+                {
+                    Day = day,
+                    Date = firstDayOfDate.AddDays(day - 1)
+                });
         }
 
         // Add empty cells to fill up to 42 cells in total
@@ -447,7 +464,8 @@
         }
 
         UpdateSelectedDate();
-        monthMode = yearMode = false; // Return to default view
+        monthMode = yearMode = false;
+        openPicker = true;// Return to default view
         PrepareCells(selectedDate.Value);
         StateHasChanged();
     }
