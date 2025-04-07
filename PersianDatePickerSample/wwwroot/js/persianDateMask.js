@@ -22,29 +22,40 @@ window.addEnterKeyListener = function (inputId, dotNetHelper) {
     inputId._enterKeyHandler = handleKeyDown;
 };
 
-window.addOutsideClickListener = function (pickerId, dotNetHelper) {
-    const pickerElement = document.getElementById(pickerId);
+window.registerClickOutside = function (pickerId, inputId, yearMonthSelectorId, dotNetHelper) {
+    // Remove any existing listener to avoid duplicates
+    document.removeEventListener('click', window._persianDatePickerClickOutsideHandler);
 
-    function handleClickOutside(event) {
-        // بررسی اینکه کلیک روی خود پیکر یا اجزای داخلی آن نباشد
-        if (
-            pickerElement &&
-            !pickerElement.contains(event.target) &&
-            !event.target.closest(`#${pickerId}`)
-        ) {
-            // اگر کلیک بیرون از محدوده ی پیکر باشد
-            dotNetHelper.invokeMethodAsync('InvokeClickOutside');
+    window._persianDatePickerClickOutsideHandler = function (event) {
+        const calendarPicker = document.getElementById(pickerId);
+        const inputElement = document.getElementById(inputId);
+        const yearMonthSelector = document.getElementById(yearMonthSelectorId);
+
+        // Check if click is outside all relevant elements
+        const clickedOutside =
+            calendarPicker && !calendarPicker.contains(event.target) &&
+            (!inputElement || !inputElement.contains(event.target)) &&
+            (!yearMonthSelector || !yearMonthSelector.contains(event.target));
+
+        if (clickedOutside) {
+            dotNetHelper.invokeMethodAsync('ClosePicker');
         }
-    }
+    };
 
-    // اضافه کردن شنونده برای کلیک
-    document.addEventListener('click', handleClickOutside);
-
-    // ذخیره مرجع برای پاکسازی (اختیاری)
-    pickerElement._outsideClickHandler = handleClickOutside;
+    // Use capture phase to ensure we catch the event early
+    document.addEventListener('click', window._persianDatePickerClickOutsideHandler, true);
 };
 
+window.removePersianDatePickerListeners = function (pickerId) {
+    document.removeEventListener('click', window._persianDatePickerClickOutsideHandler);
+    delete window._persianDatePickerClickOutsideHandler;
 
+    const input = document.getElementById(`manualDateInput_${pickerId.split('_')[1]}`);
+    if (input && input._enterKeyHandler) {
+        input.removeEventListener('keydown', input._enterKeyHandler);
+        delete input._enterKeyHandler;
+    }
+};
 
 window.clearInputAndApplyMask = function (inputId, dotNetHelper) {
     const input = document.getElementById(inputId);

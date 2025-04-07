@@ -1,17 +1,17 @@
 ﻿@inject IJSRuntime JS
 
-<div class="Persian-date-picker" id="@($"manualDateInput_{UniqueId}")">
+<div class="Persian-date-picker" id="@($"PersianPicker_{UniqueId}")">
     <div class="input-wrapper">
         <input class="p-date"
-        id="@($"manualDateInput_{UniqueId}")"
-        value="@manualInput"
-        @onfocus="() =>
-                              {
+               id="@($"manualDateInput_{UniqueId}")"
+               value="@manualInput"
+               @onfocus="() =>
+               {
                    if (!string.IsNullOrWhiteSpace(selectedDateInPersianFormat))
                        manualInput = selectedDateInPersianFormat;
                }"
-        @onclick="OpenPicker"
-        autocomplete="off" />
+               @onclick="OpenPicker"
+               autocomplete="off" />
 
         <a @onclick="Clear" class="clear">&#10006;</a>
     </div>
@@ -36,7 +36,7 @@
             else if (yearMode)
             {
                 <div class="year-select">
-                    @for (int i = curYear; i >= 1380; i--)
+                    @for (int i = 1406; i >= 1380; i--)
                     {
                         var year = i;
                         <a @onclick="() => GoToYear(year)">@i</a>
@@ -45,13 +45,13 @@
             }
             else
             {
-                <div class="year">
+                <div class="year" id="@($"yearMonthSelector_{UniqueId}")">
                     <a @onclick="NextYear" class="navigation">&#8249;</a>
                     <span @onclick="YearMode">@currentYear</span>
                     <a @onclick="PrevYear" class="navigation">&#8250;</a>
                 </div>
 
-                <div class="month">
+                <div class="month" id="@($"yearMonthSelector_{UniqueId}")">
                     <a @onclick="NextMonth" class="navigation">&#8249;</a>
                     <span @onclick="MonthMode">@monthName</span>
                     <a @onclick="PrevMonth" class="navigation">&#8250;</a>
@@ -92,10 +92,6 @@
                             }
                         </div>
                     }
-
-
-
-
                 </div>
 
                 <!-- دکمه برو به امروز -->
@@ -124,6 +120,7 @@
     int currentMonth, currentYear, currentDay, curYear;
     bool monthMode, yearMode, openPicker;
     DotNetObjectReference<PersianDatePicker>? objRef;
+    bool IsSelected = true;
 
     protected override void OnInitialized()
     {
@@ -153,7 +150,7 @@
             objRef = DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("clearInputAndApplyMask", $"manualDateInput_{UniqueId}", objRef);
             await JS.InvokeVoidAsync("addEnterKeyListener", $"manualDateInput_{UniqueId}", objRef);
-            await JS.InvokeVoidAsync("addOutsideClickListener", $"manualDateInput_{UniqueId}", objRef);
+            await JS.InvokeVoidAsync("registerClickOutside", $"PersianPicker_{UniqueId}", $"manualDateInput_{UniqueId}", $"yearMonthSelector_{UniqueId}", objRef);
         }
     }
 
@@ -199,13 +196,19 @@
     [JSInvokable]
     public void InvokeClickOutside()
     {
-
-        if (yearMode || monthMode)
+        if (!yearMode || !monthMode)
         {
+            IsSelected = true;
             return;
         }
         else
+            IsSelected = false;
+
+        if (IsSelected)
+            return;
+        else
         {
+            IsSelected = false;
             openPicker = false;
             monthMode = false;
             yearMode = false;
@@ -213,14 +216,17 @@
         }
     }
 
-
     public void Dispose()
     {
         if (objRef != null)
         {
+            // Clean up JavaScript event listeners
+            JS.InvokeVoidAsync("removePersianDatePickerListeners", $"PersianPicker_{UniqueId}");
             objRef.Dispose();
+            objRef = null;
         }
     }
+
 
     void Clear()
     {
@@ -288,10 +294,10 @@
         for (int day = 1; day <= maxDay; day++)
         {
             cells.Add(new DateCellModel
-                {
-                    Day = day,
-                    Date = firstDayOfDate.AddDays(day - 1)
-                });
+            {
+                Day = day,
+                Date = firstDayOfDate.AddDays(day - 1)
+            });
         }
 
         // Add empty cells to fill up to 42 cells in total
