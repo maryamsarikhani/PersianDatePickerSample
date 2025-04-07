@@ -1,4 +1,5 @@
 ﻿@using PersianDatePickerSample.Components.PersianDatePickerComponent
+@using System.Globalization
 @inject IJSRuntime JS
 
 <div class="Persian-date-picker" id="PersianPicker">
@@ -7,9 +8,9 @@
                id="manualDateInput"
                value="@manualInput"
                @onfocus="() =>
-               {
-                 if (!string.IsNullOrWhiteSpace(selectedDateInPersianFormat))
-                   manualInput = selectedDateInPersianFormat;
+                              {
+                   if (!string.IsNullOrWhiteSpace(selectedDateInPersianFormat))
+                       manualInput = selectedDateInPersianFormat;
                }"
                @onclick="OpenPicker"
                autocomplete="off" />
@@ -68,10 +69,23 @@
 
                     @foreach (var item in cells)
                     {
-                        var dayClass = item.Show ? "day" : "";
+                        var dayClass = "day";
 
-                        if (selectedDate.HasValue && item.Show && selectedDate.Value.Date == item.Date.Date)
-                            dayClass += " current";
+                        if (!item.Show)
+                        {
+                            dayClass = "";
+                        }
+                        else
+                        {
+                            if (selectedDate.HasValue && selectedDate.Value.Date == item.Date.Date)
+                                dayClass += " current";
+
+                            if (PersianDateHelper.GetPersianDayOfWeek(item.Date) == 5)
+                                dayClass += " friday";//جمعه
+
+                            @* if (PersianDateHelper.HolidayHelper.IsHoliday(item.Date, pc.GetYear(item.Date)))
+                                dayClass += " holiday"; // تعطیلات شمسی و قمری *@
+                        }
 
                         <div class="@dayClass">
                             @if (item.Show)
@@ -80,6 +94,10 @@
                             }
                         </div>
                     }
+
+
+
+
                 </div>
 
                 <!-- دکمه برو به امروز -->
@@ -134,8 +152,8 @@
         if (firstRender)
         {
             objRef = DotNetObjectReference.Create(this);
-            //await JS.InvokeVoidAsync("addOutsideClickListener", "PersianPicker", objRef);
             await JS.InvokeVoidAsync("clearInputAndApplyMask", "manualDateInput", objRef);
+            await JS.InvokeVoidAsync("addEnterKeyListener", "manualDateInput", objRef);
         }
     }
 
@@ -162,7 +180,7 @@
             }
 
             validationMessage = string.Empty;
-            openPicker = true; 
+            openPicker = true;
             StateHasChanged();
         }
         catch (Exception ex)
@@ -200,6 +218,8 @@
         JS.InvokeVoidAsync("clearInput", "manualDateInput");
         StateHasChanged();
     }
+
+
 
 
     void OpenPicker()
@@ -251,10 +271,10 @@
         for (int day = 1; day <= maxDay; day++)
         {
             cells.Add(new DateCellModel
-                {
-                    Day = day,
-                    Date = firstDayOfDate.AddDays(day - 1)
-                });
+            {
+                Day = day,
+                Date = firstDayOfDate.AddDays(day - 1)
+            });
         }
 
         // Add empty cells to fill up to 42 cells in total

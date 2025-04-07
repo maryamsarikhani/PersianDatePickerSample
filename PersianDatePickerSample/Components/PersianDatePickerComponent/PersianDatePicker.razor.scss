@@ -216,6 +216,16 @@
                     color: #fff;
                     font-weight: bold;
                 }
+
+                &.friday {
+                    color: red;
+                    font-weight: bold;
+                }
+
+                &.holiday {
+                    color: red;
+                    font-weight: bold;
+                }
             }
         }
     }
