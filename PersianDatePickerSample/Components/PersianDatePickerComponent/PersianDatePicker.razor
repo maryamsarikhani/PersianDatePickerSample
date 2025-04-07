@@ -83,8 +83,8 @@
                             if (PersianDateHelper.GetPersianDayOfWeek(item.Date) == 5)
                                 dayClass += " friday";//جمعه
 
-                            @* if (PersianDateHelper.HolidayHelper.IsHoliday(item.Date, pc.GetYear(item.Date)))
-                                dayClass += " holiday"; // تعطیلات شمسی و قمری *@
+                            if (PersianDateHelper.HolidayHelper.IsHoliday(item.Date, pc.GetYear(item.Date)))
+                                dayClass += " holiday"; // تعطیلات شمسی و قمری
                         }
 
                         <div class="@dayClass">
