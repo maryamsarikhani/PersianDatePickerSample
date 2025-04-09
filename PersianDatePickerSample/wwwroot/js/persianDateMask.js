@@ -86,27 +86,41 @@ window.clearInputAndApplyMask = function (inputId, dotNetHelper) {
             }
         }
 
+        // رقم دوم روز بر اساس رقم اول روز
+        if (digits.length >= 6) {
+            const d1 = digits[0, 4];
+            const d2 = digits[0,5];
+
+            if (d1 === "0" && !["1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(d2)) {
+                digits = digits.slice(0, 5); // دومین رقم روز نامعتبر → حذفش کن
+            }
+            else if (d1 === "1" && !["0", "1","2"].includes(d2)) {
+                digits = digits.slice(0, 5); // روز باید 30 یا 31 باشه
+            }
+        }
+
+
         // رقم اول روز فقط 0 تا 3
         if (digits.length >= 7) {
             const dayFirstDigit = digits[6];
             if (!["0", "1", "2", "3"].includes(dayFirstDigit)) {
-                digits =  digits.slice(6); // فقط رقم هفتم را حذف کن
+                digits = digits.slice(6); // فقط رقم اول روز را حذف کن
             }
         }
 
         // رقم دوم روز بر اساس رقم اول روز
         if (digits.length >= 8) {
-            const d1 = digits[6];
-            const d2 = digits[7];
+            const d1 = digits[0,6];
+            const d2 = digits[0, 7];
 
             if (d1 === "0" && !["1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(d2)) {
-                digits = digits.slice( 7); // دومین رقم روز نامعتبر → حذفش کن
+                digits = digits.slice(0, 7); // دومین رقم روز نامعتبر → حذفش کن
             }
             else if ((d1 === "1" || d1 === "2") && !/^[0-9]$/.test(d2)) {
-                digits = digits.slice(7); // فقط عدد مجاز روز
+                digits = digits.slice(0, 7); // فقط عدد مجاز روز
             }
             else if (d1 === "3" && !["0", "1"].includes(d2)) {
-                digits = digits.slice( 7); // روز باید 30 یا 31 باشه
+                digits = digits.slice(0, 7); // روز باید 30 یا 31 باشه
             }
         }
 
