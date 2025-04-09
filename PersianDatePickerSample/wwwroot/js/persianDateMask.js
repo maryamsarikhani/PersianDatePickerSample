@@ -8,8 +8,8 @@ window.addEnterKeyListener = function (inputId, dotNetHelper) {
             // بررسی اینکه آیا ورودی خالی است یا معتبر نیست
             const regex = /^\d{4}\/\d{2}\/\d{2}$/;
             if (!regex.test(inputElement.value) || inputElement.value.trim() === "") {
-                inputElement.value = "____/__/__";  // ورودی نامعتبر یا خالی است، خالی می‌شود
-                dotNetHelper.invokeMethodAsync('ClosePicker');  // پیکر بسته می‌شود
+                inputElement.value = "____/__/__";  // ورودی نامعتبر یا خالی است، خالی می شود
+                dotNetHelper.invokeMethodAsync('ClosePicker');  // پیکر بسته می  شود
             } else {
                 dotNetHelper.invokeMethodAsync('ClosePicker');  // پیکر بسته می‌شود
             }

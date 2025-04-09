@@ -14,13 +14,13 @@
                autocomplete="off" />
 
         <a @onclick="Clear" class="clear">&#10006;</a>
-    </div>
+   
 
     @if (!string.IsNullOrEmpty(validationMessage))
     {
-        <div class="validation-message">@validationMessage</div>
+        <div class="validation-message">@validationMessage</div> 
     }
-
+    </div>
     @if (openPicker)
     {
         <div class="Persian-date-wrapper">
@@ -162,7 +162,7 @@
             int maxDays = GetDaysInMonth(year, month);
             if (day < 1 || day > maxDays)
             {
-                validationMessage = $"روز باید بین 1 تا {maxDays} باشد.";
+                validationMessage = $"این ماه {maxDays} روز دارد";
                 return;
             }
 
